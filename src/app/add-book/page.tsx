@@ -11,10 +11,27 @@ export default function AddBook() {
     image: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const validateAmazonUrl = (url: string) => {
+    const amazonMediaPattern =
+      /^https:\/\/m\.media-amazon\.com\/images\/(?:I|G\/\d+\/pv_starlight)\/.*\.(jpg|jpeg|png)(?:\?.*)?$/i;
+    return amazonMediaPattern.test(url);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate Amazon media URL
+    if (!validateAmazonUrl(formData.image)) {
+      setError(
+        "Please enter a valid Amazon media image URL (e.g., https://m.media-amazon.com/images/I/... or https://m.media-amazon.com/images/G/...)"
+      );
+      return;
+    }
+
     setIsSubmitting(true);
+    setError(null);
 
     try {
       const response = await fetch("/api/books", {
@@ -28,10 +45,11 @@ export default function AddBook() {
       if (response.ok) {
         router.push("/");
       } else {
-        console.error("Failed to add book");
+        throw new Error("Failed to add book");
       }
     } catch (error) {
       console.error("Error adding book:", error);
+      setError("An error occurred while adding the book. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -69,6 +87,12 @@ export default function AddBook() {
           <p className="text-gray-600 text-center mb-8">
             Share your favorite books with the community
           </p>
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-600">
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -122,13 +146,19 @@ export default function AddBook() {
                 type="url"
                 id="image"
                 value={formData.image}
-                onChange={(e) =>
-                  setFormData({ ...formData, image: e.target.value })
-                }
+                onChange={(e) => {
+                  setFormData({ ...formData, image: e.target.value });
+                  setError(null);
+                }}
                 required
                 className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500"
-                placeholder="Enter image URL"
+                placeholder="Enter Amazon media image URL (e.g., https://m.media-amazon.com/images/I/... or https://m.media-amazon.com/images/G/...)"
               />
+              <p className="mt-2 text-sm text-gray-500">
+                Only Amazon media URLs are accepted (e.g.,
+                https://m.media-amazon.com/images/I/... or
+                https://m.media-amazon.com/images/G/...)"
+              </p>
             </div>
 
             <button
